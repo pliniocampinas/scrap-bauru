@@ -1,0 +1,29 @@
+{
+  "name": "scrap-bauru",
+  "version": "1.0.0",
+  "description": "Scrapping some data to test pupeteer",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pliniocampinas/scrap-bauru.git"
+  },
+  "keywords": [
+    "scrap",
+    "puppeteer",
+    "bauru"
+  ],
+  "author": "plinio",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pliniocampinas/scrap-bauru/issues"
+  },
+  "homepage": "https://github.com/pliniocampinas/scrap-bauru#readme",
+  "dependencies": {
+    "puppeteer": "^9.0.0"
+  }
+}
