@@ -1,3 +1,5 @@
-const ScrapSitePrefeitura = require('./processes/ScrapSitePrefeitura')
+// const ScrapSitePrefeitura = require('./processes/ScrapSitePrefeitura')
+// ScrapSitePrefeitura.run()
 
-ScrapSitePrefeitura.run()
+const ScrapBovespa = require('./processes/ScrapBovespa')
+ScrapBovespa.run()
