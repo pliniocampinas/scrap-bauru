@@ -17,82 +17,65 @@ const exportCsv = (filePath, list, stringfyListItem) => {
   });
 }
 
-const evaluateUrlsSecretarias = async (page) => {
-  const dropdownMenuSecretarias = '.dropdown-menu.secretarias'
-  await page.waitForSelector(dropdownMenuSecretarias)
+const evaluatePageEmpresasListadas = async (page) => {
+  const cardSelector = '.card-body'
 
-  // Extrai resultados da pagina
-  const urlsSecretarias = await page.evaluate((dropdownSelector) => {
+  const companiesCardData = await page.evaluate((cardSelector) => {
 
-      const secretarias = []
-      let encontrouTodasSecretarias = false
-      document.querySelectorAll(dropdownSelector + ' li').forEach( (listItem) => {
-        if(encontrouTodasSecretarias) {
-          return
-        }
-        // Pega todos até a divisória, não pega orgão municipais
-        if(listItem.classList.contains('divider')) {
-          encontrouTodasSecretarias = true
-          return
-        }
+    const iframeDocument = document.querySelector('#bvmf_iframe').contentWindow.document
+    const companiesCardData = []
+    iframeDocument.querySelectorAll(cardSelector).forEach( (listItem) => {
+      const companyTitle = listItem.querySelector('.card-title2').innerText
+      const companyLongName = listItem.querySelector('.card-text').innerText
+      const companyShortName = listItem.querySelector('.card-nome').innerText
 
-        const urlSecretaria = listItem.querySelector('a').href
-        secretarias.push(urlSecretaria)
-      })
+      const companyData = {
+        title: companyTitle,
+        longName: companyLongName,
+        shortName: companyShortName,
+      }
 
-      // Retira ultima linha de 'Todos os Serviços...'
-      secretarias.pop()
-      return secretarias
-  }, dropdownMenuSecretarias)
+      companiesCardData.push(companyData)
+    })
 
-  return urlsSecretarias
+    return companiesCardData
+  }, cardSelector)
+
+  return companiesCardData
 }
 
-const evaluateDadosSecretario = async (page) => {
-  await page.waitForSelector('.equipe-governo')
-
-  // Extrai resultados da pagina
-  const dadosSecretario = await page.evaluate((context) => {
-    const dados = document.querySelector('.equipe-governo').innerHTML
-    return dados
+const clickSearchAll = async (page) => {
+  await page.evaluate(() => {
+    const iframeDocument = document.querySelector('#bvmf_iframe').contentWindow.document
+    const searchAllButtonSelector = 'app-companies-home-filter-name button.btn-light'
+    iframeDocument.querySelector(searchAllButtonSelector).click()
   })
-
-  return dadosSecretario
 }
 
 module.exports = {
   async run() {
     console.log('Buscando dados...')
-    const browser = await puppeteer.launch()
+    const browser = await puppeteer.launch({
+      args: [
+         '--disable-web-security'
+      ]
+    })
     const page = await browser.newPage()
 
     // Site
-    const baseUrl = 'http://www.b3.com.br/pt_br/market-data-e-indices/indices/indices-amplos/indice-ibovespa-ibovespa-composicao-da-carteira.htm'
+    const baseUrl = 'https://www.b3.com.br/pt_br/produtos-e-servicos/negociacao/renda-variavel/empresas-listadas.htm'
     console.log('Navegando para ', baseUrl)
     await page.goto(baseUrl)
-    // Extrai resultados da pagina
-    console.log('Pega tabela paginada');
-    const urlsSecretarias = await evaluateUrlsSecretarias(page)
-    // Loga no console
-    console.log('Urls encontradas')
-    console.log(urlsSecretarias)
-    // Exporta Csv
-    exportCsv("./scrapped-content/urls-secretarias.csv", urlsSecretarias, item => item)
 
-    // Navega para cada uma das secretarias e busca dados sobre o secretario
-    const listaDadosSecretarios = []
-    for (const urlSecretaria of urlsSecretarias) {
-      console.log(`navegando para: ${urlSecretaria}`)
-      await page.goto(urlSecretaria)
+    await page.waitForSelector('#bvmf_iframe')
+    await clickSearchAll(page)
+    await page.waitFor(5000)
 
-      const dadosSecretario =  await evaluateDadosSecretario(page)
-      listaDadosSecretarios.push(dadosSecretario)
-    }
-    console.log('ListaDadosSecretarios')
-    console.log(listaDadosSecretarios)
-    console.log('----------------------')
+    // Wait for the first card
+    const companiesCardData = await evaluatePageEmpresasListadas(page)
+
     // Exporta Csv
-    exportCsv("./scrapped-content/lista-dados-secretarios.csv", listaDadosSecretarios, item => item)
+    exportCsv("./scrapped-content/lista-empresas.csv", companiesCardData, item => JSON.stringify(item))
 
     await browser.close()
   }
