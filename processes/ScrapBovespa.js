@@ -69,7 +69,7 @@ module.exports = {
 
     await page.waitForSelector('#bvmf_iframe')
     await clickSearchAll(page)
-    await page.waitFor(5000)
+    await page.waitForTimeout(5000)
 
     // Wait for the first card
     const companiesCardData = await evaluatePageEmpresasListadas(page)
