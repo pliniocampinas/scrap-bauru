@@ -44,6 +44,21 @@ const evaluatePageEmpresasListadas = async (page) => {
   return companiesCardData
 }
 
+const nextPageClick = async (page) => {
+  const nextPageExists = await page.evaluate(() => {
+    const iframeDocument = document.querySelector('#bvmf_iframe').contentWindow.document
+    const nextPageButtonSelector = '.pagination-next'
+    const nextButton = iframeDocument.querySelector(nextPageButtonSelector)
+    if(!nextButton || nextButton.classList.contains('disabled')) {
+      return false
+    }
+    const nextButtonLink = nextButton.querySelector('a')
+    nextButtonLink.click()
+    return true
+  })
+  return nextPageExists
+}
+
 const clickSearchAll = async (page) => {
   await page.evaluate(() => {
     const iframeDocument = document.querySelector('#bvmf_iframe').contentWindow.document
@@ -71,8 +86,16 @@ module.exports = {
     await clickSearchAll(page)
     await page.waitForTimeout(5000)
 
-    // Wait for the first card
-    const companiesCardData = await evaluatePageEmpresasListadas(page)
+    const companiesCardData = []
+    let pageCounter = 1
+    do {
+      console.log(`Buscando página numero ${pageCounter}`)
+      const pageResults = await evaluatePageEmpresasListadas(page)
+      pageResults.forEach((result) => companiesCardData.push(result))
+      console.log(`Resultados encontrados:  ${companiesCardData.length}`)
+      await page.waitForTimeout(1000)
+      pageCounter++
+    } while (await nextPageClick(page) && pageCounter < 100);
 
     // Exporta Csv
     exportCsv("./scrapped-content/lista-empresas.csv", companiesCardData, item => JSON.stringify(item))
